@@ -1,0 +1,15 @@
+{
+  "servers": [
+    {
+      "0": {
+        "max_connection_pool": 8,
+        "port": 8000,
+        "domain": "localhost"
+      }
+    }
+  ],
+  "storage": [
+    {"local": {"config_path":""}},
+    {"swift": {"config_path":""}}
+  ]
+}
