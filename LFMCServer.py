@@ -10,12 +10,13 @@ from lfmc.results.DataPoint import DataPoint
 from lfmc.results.ModelResult import ModelResult, ModelResultSchema
 from lfmc.models.ModelRegister import ModelRegister, ModelsRegisterSchema
 import numpy as np
+import pandas as pd
 
 api = hug.get(on_invalid=hug.redirect.not_found)
 
 
 @hug.cli()
-@api.urls('/fuel', examples='lat1=-10&lon1=110&lat2=-45&lon2=145&start=20180101&finish=20180201', versions=0)
+@hug.get('/fuel', examples='lat1=-10&lon1=110&lat2=-45&lon2=145&start=20180101&finish=20180201', versions=0)
 def fuel(lat1: hug.types.number, lon1: hug.types.number, lat2: hug.types.number, lon2: hug.types.number,
          start: fields.String(), finish: fields.String()):
     """ While under development currently just JSON Encodes the query. """
@@ -26,24 +27,22 @@ def fuel(lat1: hug.types.number, lon1: hug.types.number, lat2: hug.types.number,
 
 
 @hug.cli()
-@api.urls('/fuel', examples='lat1=-10&lon1=110&lat2=-45&lon2=145&start=20180101&finish=20180201', versions=1,
-          output=hug.output_format.pretty_json)
-def fuel(lat1: hug.types.number,
-         lon1: hug.types.number,
-         lat2: hug.types.number,
-         lon2: hug.types.number,
+@hug.get('/fuel', examples='lat1=-10&lon1=110&lat2=-45&lon2=145&start=20180101&finish=20180201&models=dead_fuel,live_fuel', versions=1, output=hug.output_format.pretty_json)
+def fuel(lat1: fields.Decimal(as_string=True),
+         lon1: fields.Decimal(as_string=True),
+         lat2: fields.Decimal(as_string=True),
+         lon2: fields.Decimal(as_string=True),
          start: fields.String(),
          finish: fields.String(),
-         subset: fields.String()):
+         models: hug.types.delimited_list(',')):
     """ While under development currently just JSON Encodes the query. """
     query = SpatioTemporalQuery(lat1, lon1, lat2, lon2, start, finish)
     query.logResponse()
     schema = ModelResultSchema(many=True)
-
-    if subset is not None:
-        model_subset = subset.split(',')
-    else:
-        model_subset = ['live_fuel', 'dead_fuel']
+    model_subset = ['live_fuel', 'dead_fuel']
+    if models is not None:
+        model_subset = models
+        
 
     loop = asyncio.get_event_loop()
     future = asyncio.Future()
@@ -94,13 +93,21 @@ async def lodge(st_query: Query, future: asyncio.Future, filters=None):
                 response = []
                 diff = st_query.temporal.finish - st_query.temporal.start
                 for i in range(diff.days):
+                    
+                    # Dummy data for testing...
+                    # value, mean, min, max, std
+                    five_values = [np.random.random_sample() for i in range(5)]
+                    
+                    five_values = pd.DataFrame(five_values)
+                    # print(five_values)
                     response.append(DataPoint(st_query.temporal.start + dt.timedelta(days=i),
-                                              np.random.random_sample(),
-                                              np.random.random_sample(),
-                                              np.random.random_sample(),
-                                              np.random.random_sample(),
-                                              np.random.random_sample()
+                                              five_values[0].mean(),
+                                              five_values[0].mean(),
+                                              five_values[0].min(),
+                                              five_values[0].max(),
+                                              five_values[0].std()
                                               ))
+                    # print(response)
             rc.append(ModelResult(item, response))
     # if DEBUG:
     #     await asyncio.sleep(10)
@@ -108,21 +115,15 @@ async def lodge(st_query: Query, future: asyncio.Future, filters=None):
 
 
 @hug.cli()
-@api.urls('/monitors/requests', versions=0)
+@api.urls('/monitors/requests', versions=1)
 def monitor_requests():
     return {"requests": []}
 
 
 @hug.cli()
-@api.urls('/monitors/processes', versions=0)
+@api.urls('/monitors/processes', versions=1)
 def monitor_processes():
     return {"processes": []}
-
-
-@hug.cli()
-@api.urls('/models', versions=0)
-def get_models():
-    return {"models": []}
 
 
 @hug.cli()

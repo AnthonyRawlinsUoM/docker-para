@@ -12,4 +12,4 @@ ADD lfmc /lfmc
 ADD LFMCServer.py /
 
 EXPOSE 8000
-# ENTRYPOINT ["hug", "-f", "LFMCServer.py"]
+ENTRYPOINT ["hug", "-f", "LFMCServer.py"]

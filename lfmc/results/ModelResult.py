@@ -18,10 +18,10 @@ class ModelResult:
         type
                         Description of returned object.
         """
-        self.data_points = data_points
-        self.model_name = model_name
+        self.series = data_points
+        self.name = model_name
 
 
 class ModelResultSchema(Schema):
-    model_name = fields.String()
-    data_points = fields.Nested(DataPointSchema, many=True)
+    name = fields.String()
+    series = fields.Nested(DataPointSchema, many=True)

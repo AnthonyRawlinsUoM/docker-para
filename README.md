@@ -11,7 +11,7 @@ Processes, Models and TS Data are all exposed through as RESTful API.
 Hug is used for API development and Hug also naturally exposes a WSGI-Compatible API ready for production use.
 
 ### Building the Docker Image
-    $ docker build . --tag parallel
+    $ docker build . --tag anthonyrawlinsuom/lfmc-api
 
 ### Running the Docker Image
-    $ docker run -it -p 8000:8000 parallel /bin/bash -exec 'hug -f LFMCServer.py'
+    $ docker run -it -p 8000:8000 anthonyrawlinsuom/lfmc-api /bin/bash -exec 'hug -f LFMCServer.py'
