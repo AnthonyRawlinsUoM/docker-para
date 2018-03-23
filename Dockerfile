@@ -11,5 +11,5 @@ RUN pip install marshmallow python-swiftclient python-keystoneclient
 ADD lfmc /lfmc
 ADD LFMCServer.py /
 
-EXPOSE 8000
-ENTRYPOINT ["hug", "-f", "LFMCServer.py"]
+EXPOSE 8002
+ENTRYPOINT ["hug", "-f", "LFMCServer.py", "-p", "8002"]
