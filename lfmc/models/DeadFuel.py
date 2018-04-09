@@ -30,7 +30,7 @@ class DeadFuelModel(Model):
         dead_fuel_moisture_prefix = 'DFMC'
 
         self.path = os.path.abspath(
-            '/media/arawlins/Data/UOM/lfmc-pipeline/NolanDead') + '/'
+            '/media/arawlins/Backups/DataSources/geoserver_data/FuelModels/Dead_FM') + '/'
 
         vapour_url = "http://www.bom.gov.au/web03/ncc/www/awap/vprp/vprph15/daily/grid/0.05/history/nat/"
         max_avg_temp_url = "http://www.bom.gov.au/web03/ncc/www/awap/temperature/maxave/daily/grid/0.05/history/nat/"
@@ -78,9 +78,6 @@ class DeadFuelModel(Model):
             }
         }
 
-
-    # def get_query_response_for(self, query: Query):
-    #     return None
 
     def calculate(vp, t, p):
         """Short summary.

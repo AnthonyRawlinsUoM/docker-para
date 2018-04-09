@@ -1,4 +1,4 @@
-all: build
+all: pull
 
 build:
 	@docker build --tag=anthonyrawlinsuom/lfmc-api .
@@ -6,5 +6,8 @@ build:
 install:
 	@docker push anthonyrawlinsuom/lfmc-api
 	
+pull:
+	@docker pull anthonyrawlinsuom/lfmc-api
+
 clean:
-	@docker rmi anthonyrawlinsuom/lfmc-api
+	@docker rmi --force anthonyrawlinsuom/lfmc-api

@@ -1,4 +1,4 @@
-# docker-para
+# lfmc-api
 
 ## README
 
@@ -14,4 +14,4 @@ Hug is used for API development and Hug also naturally exposes a WSGI-Compatible
     $ docker build . --tag anthonyrawlinsuom/lfmc-api
 
 ### Running the Docker Image
-    $ docker run -it -p 8000:8000 anthonyrawlinsuom/lfmc-api /bin/bash -exec 'hug -f LFMCServer.py'
+    $ docker run -it -p 8002:8002 anthonyrawlinsuom/lfmc-api /bin/bash -exec 'hug -f LFMCServer.py'

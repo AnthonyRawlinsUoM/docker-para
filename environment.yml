@@ -1,4 +1,4 @@
-name: docker-para-env
+name: lfmc-api-env
 channels:
 - conda-forge
 - defaults
@@ -39,5 +39,5 @@ dependencies:
 - xz=5.2.3=0
 - zlib=1.2.11=0
 - libgfortran=3.0.0=1
-prefix: /opt/anaconda3/envs/docker-para-env
+prefix: ./venv
 
