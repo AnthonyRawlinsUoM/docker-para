@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 from marshmallow import Schema, fields
+import pandas as pd
 
 class TemporalQuery(object):
   """
@@ -8,6 +9,9 @@ class TemporalQuery(object):
   def __init__(self, start, finish):
     self.start = dt.strptime(start, '%Y%m%d').date()
     self.finish = dt.strptime(finish, '%Y%m%d').date()
+    
+  def dates(self):
+      return pd.date_range(self.start, self.finish)
 
 class TemporalQuerySchema(Schema):
     start = fields.Date()

@@ -18,6 +18,7 @@ class ModelResult:
         type
                         Description of returned object.
         """
+        # An Array (1D) of DataPoints
         self.series = data_points
         self.name = model_name
 
