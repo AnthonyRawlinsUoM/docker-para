@@ -3,6 +3,11 @@ from marshmallow import fields, Schema
 from lfmc.models.Model import Model, ModelSchema
 from lfmc.models.DeadFuel import DeadFuelModel
 from lfmc.models.LiveFuel import LiveFuelModel
+from lfmc.models.FFDI import FFDIModel
+from lfmc.models.KBDI import KBDIModel
+from lfmc.models.GFDI import GFDIModel
+from lfmc.models.AWRA import AWRAModel
+
 
 import pandas as pd
 
@@ -10,12 +15,24 @@ class ModelRegister:
     def __init__(self):
         dead_fuel = DeadFuelModel()
         live_fuel = LiveFuelModel()
+        ffdi = FFDIModel()
+        gfdi = GFDIModel()
+        kbdi = KBDIModel()
+        awra = AWRAModel()
     
         self.models = [
                         {'model_name': dead_fuel.name,
                          'model': dead_fuel},
                         {'model_name': live_fuel.name,
-                         'model': live_fuel}
+                         'model': live_fuel},
+                        {'model_name': ffdi.name,
+                         'model': ffdi},
+                        {'model_name': gfdi.name,
+                         'model': gfdi},
+                        {'model_name': awra.name,
+                          'model': awra},
+                         {'model_name': kbdi.name,
+                           'model': kbdi}
                       ]
         self.model_names = self.get_models()
     

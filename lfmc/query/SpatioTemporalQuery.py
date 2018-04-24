@@ -4,7 +4,7 @@ from lfmc.query.TemporalQuery import TemporalQuery, TemporalQuerySchema
 from lfmc.query.SpatialQuery import SpatialQuery, SpatialQuerySchema
 
 
-class SpatioTemporalQuery(Query, object):
+class SpatioTemporalQuery(Query):
   def __init__(self, lat1, lon1, lat2, lon2, start, finish):
     """Short summary.
 
@@ -31,9 +31,18 @@ class SpatioTemporalQuery(Query, object):
     """
     self.spatial = SpatialQuery(lat1, lon1, lat2, lon2)
     self.temporal = TemporalQuery(start, finish)
-
+  
+  def dates(self):
+      return self.temporal.dates();
 
 class SpatioTemporalQuerySchema(Schema):
   meta = fields.Nested(QuerySchema)
   spatial = fields.Nested(SpatialQuerySchema)
   temporal = fields.Nested(TemporalQuerySchema)
+
+# tq = TemporalQuery('20170101','20171231')
+# sq = SpatialQuery(-10, 110, -45, 155)
+# schema = SpatialQuerySchema()
+# data, errors = schema.dump(sq)
+# 
+# data
