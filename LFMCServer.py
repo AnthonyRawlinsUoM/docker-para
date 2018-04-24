@@ -13,6 +13,12 @@ from lfmc.models.ModelRegister import ModelRegister, ModelsRegisterSchema
 import numpy as np
 import pandas as pd
 
+import logging
+
+logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG, 
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger=logging.getLogger(__name__)
+
 api = hug.get(on_invalid=hug.redirect.not_found)
 
 
@@ -38,6 +44,9 @@ async def fuel(lat1: fields.Decimal(as_string=True),
          models: hug.types.delimited_list(',')):
     """ While under development currently just JSON Encodes the query. """
     query = SpatioTemporalQuery(lat1, lon1, lat2, lon2, start, finish)
+    stqs = SpatioTemporalQuerySchema()
+    r, e = stqs.dump(query)
+    logger.debug("Query was: %s" % (pprint(r)) )
     
     schema = ModelResultSchema(many=True)
     model_subset = ['dead_fuel']
@@ -45,13 +54,10 @@ async def fuel(lat1: fields.Decimal(as_string=True),
         model_subset = models
     
     mr = ModelRegister()
-    print("Answering now...")
-    successes = await asyncio.gather( *[ mr.get(model).answer(query) for model in model_subset] )
-    results = successes.result()
+    logger.debug("Answering now...")
 
-    # Success
-    response, errors = schema.dump(results)
-    # pprint(response)
+    response, errors = schema.dump(await asyncio.gather( *[ mr.get(model).answer(query) for model in model_subset] ))
+    logger.debug(response)
 
     # Default Response
     query.logResponse()

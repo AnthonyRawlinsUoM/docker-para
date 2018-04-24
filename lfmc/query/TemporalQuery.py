@@ -1,8 +1,9 @@
 from datetime import datetime as dt
 from marshmallow import Schema, fields
 import pandas as pd
+from lfmc.query.Query import Query, QuerySchema
 
-class TemporalQuery(object):
+class TemporalQuery(Query):
   """
     TemporalQuery is a date range. All data in the temporal range is returned regardless of resolution.
   """

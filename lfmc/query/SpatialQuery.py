@@ -1,7 +1,8 @@
+from lfmc.query.Query import Query, QuerySchema
 from marshmallow import Schema, fields
 
 
-class SpatialQuery(object):
+class SpatialQuery(Query):
   """ SpatialQuery is a Bounding box defined by the NW/SE corners of a rectangular selection
   """
 
@@ -31,6 +32,7 @@ class SpatialQuery(object):
     self.lat2 = lat2
     self.lon2 = lon2
 
+  pass
 
 class SpatialQuerySchema(Schema):
   lat1 = fields.Decimal(places=8, as_string=True)
@@ -42,5 +44,5 @@ class SpatialQuerySchema(Schema):
 # sq = SpatialQuery(-10, 110, -45, 155)
 # schema = SpatialQuerySchema()
 # data, errors = schema.dump(sq)
-#
+# 
 # data

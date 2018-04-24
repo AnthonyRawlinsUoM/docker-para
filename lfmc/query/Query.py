@@ -7,6 +7,8 @@ class Query:
 
     def logResponse(self):
         self.response_time = dt.now()
+    
+    pass
 
 class QuerySchema(Schema):
     request_time = fields.DateTime()
