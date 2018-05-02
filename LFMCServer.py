@@ -63,14 +63,11 @@ async def fuel(lat1: fields.Decimal(as_string=True),
 async def fuel(geo_json,
                start: fields.String(),
                finish: fields.String(),
-               lat1: fields.Decimal(as_string=True),
-               lon1: fields.Decimal(as_string=True),
-               lat2: fields.Decimal(as_string=True),
-               lon2: fields.Decimal(as_string=True),
+               weighted: fields.Bool(),
                models: hug.types.delimited_list(',')):
 
-    stq = SpatioTemporalQuery(lat1, lon1, lat2, lon2, start, finish)
-    query = ShapeQuery(spatio_temporal_query=stq, geo_json=geo_json)
+    query = ShapeQuery(start=start, finish=finish,
+                       geo_json=geo_json, weighted=weighted)
 
     schema = ModelResultSchema(many=True)
     model_subset = ['dead_fuel']
@@ -78,9 +75,9 @@ async def fuel(geo_json,
         model_subset = models
 
     mr = ModelRegister()
-    logger.debug("Answering fuel time-series now...")
+    logger.debug("Answering fuel geojson shaped time-series now...")
 
-    response, errors = schema.dump(await asyncio.gather(*[mr.get(model).get_timeseries(query) for model in model_subset]))
+    response, errors = schema.dump(await asyncio.gather(*[mr.get(model).get_shaped_timeseries(query) for model in model_subset]))
     logger.debug(response)
 
     # Default Response

@@ -43,12 +43,10 @@ logger = logging.getLogger(__name__)
 
 class ShapeQuery(SpatioTemporalQuery):
 
-    def __init__(self, spatio_temporal_query: SpatioTemporalQuery, geo_json: json, weighted=False):
+    def __init__(self, start, finish, geo_json: json, weighted=False):
+
         self.weighted = weighted
-        self.spatio_temporal_query = spatio_temporal_query
         self.geo_json = geo_json
-        self.temporal = spatio_temporal_query.temporal
-        self.spatial = spatio_temporal_query.spatial
 
         logger.debug(geo_json["type"])
 
@@ -104,6 +102,16 @@ class ShapeQuery(SpatioTemporalQuery):
         # Do once and store
         self.mask = self.get_super_sampled_mask()
 
+        hull = ShapeQuery.get_query_hull(self.rmask)
+        lat1, lon2, lat2, lon1 = hull.bounds
+
+        logger.debug(lat1, lon1, lat2, lon2)
+
+        self.spatio_temporal_query = SpatioTemporalQuery(
+            lat1, lon1, lat2, lon2, start, finish)
+        self.temporal = self.spatio_temporal_query.temporal
+        self.spatial = self.spatio_temporal_query.spatial
+
     def get_selections(self):
         return self.selections
 
@@ -123,7 +131,10 @@ class ShapeQuery(SpatioTemporalQuery):
     @staticmethod
     def get_query_hull(regionmask):
         points = np.concatenate(regionmask.coords, axis=0)
-        return ConvexHull(points)
+
+        hull = ConvexHull(points)
+
+        return shapely.geometry.Polygon([hull.points[vertex] for vertex in hull.vertices])
 
     @staticmethod
     def get_corners(poly: shapely.geometry.Polygon):
@@ -190,5 +201,8 @@ class ShapeQuery(SpatioTemporalQuery):
             # Can then use WHERE to get Binary True/False masking for all parts
             # of the selection as a unified group...
             fuel_moistures = result_cube.where(region == 0)
+
+        logger.debug("Masked: ")
+        logger.debug(fuel_moistures)
 
         return fuel_moistures

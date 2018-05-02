@@ -127,10 +127,16 @@ class DeadFuelModel(Model):
         return mp4
 
     # ShapeQuery
-    async def get_resultcube(self, shape_query: ShapeQuery) -> xr.DataArray:
-        unmasked_but_bounded_results = self.get_resultcube(
-            shape_query.spatio_temporal_query())
-        return shape_query.apply_mask_to(result_cube=unmasked_but_bounded_results)
+    async def get_shaped_resultcube(self, shape_query: ShapeQuery) -> xr.DataArray:
+
+        sr = None
+        fs = await asyncio.gather(*[self.dataset_files(when) for when in shape_query.temporal.dates()])
+        if len(fs) > 0:
+            with xr.open_mfdataset(fs) as ds:
+                if "observations" in ds.dims:
+                    sr = ds.squeeze("observations")
+
+        return shape_query.apply_mask_to(sr)
 
     async def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
         """
@@ -163,14 +169,17 @@ class DeadFuelModel(Model):
 
         return sr
 
-    async def get_timeseries(self, query: ShapeQuery) -> ModelResult:
-        """
-        Essentially just time slicing the resultcube.
-        DataPoint actually handles the creation of values from stats.
-        :param query:
-        :return:
-        """
-        sr = await (self.get_resultcube(query))
+    async def get_shaped_timeseries(self, query: ShapeQuery) -> ModelResult:
+        logger.debug(
+            "\n--->>> Shape Query Called successfully on Dead Fuel Model!! <<<---")
+
+        logger.debug("Spatial Component is: \n%s" % str(query.spatial))
+        logger.debug("Temporal Component is: \n%s" % str(query.temporal))
+
+        logger.debug("\nDerived LAT1: %s\nDerived LON1: %s\nDerived LAT2: %s\nDerived LON2: %s" %
+                     query.spatial.expanded(0.05))
+
+        sr = await (self.get_shaped_resultcube(query))
         dps = [self.get_datapoint_for_param(b=sr.isel(time=t), param="DFMC")
                for t in range(0, len(sr["time"]))]
         return ModelResult(model_name=self.name, data_points=dps)
@@ -182,6 +191,8 @@ class DeadFuelModel(Model):
         :param query:
         :return:
         """
+        logger.debug(
+            "--->>> SpatioTemporal Query Called on Dead Fuel Model!! <<<---")
         sr = await (self.get_resultcube(query))
         dps = [self.get_datapoint_for_param(b=sr.isel(time=t), param="DFMC")
                for t in range(0, len(sr["time"]))]
