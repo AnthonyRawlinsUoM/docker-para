@@ -1,10 +1,9 @@
 import hug
+import xarray as xr
 from abc import abstractmethod
-from marshmallow import Schema, fields
-from lfmc.results.Author import Author
-from lfmc.models.ModelMetaData import ModelMetaDataSchema
-from lfmc.results.DataPoint import DataPoint
+from marshmallow import Schema
 from lfmc.results.ModelResult import ModelResult
+from lfmc.results.Formatter import Formatter
 from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
 
 class Model():
@@ -14,6 +13,7 @@ class Model():
         self.parameters = {}
         self.outputs = {}
         self.tolerance = 0
+        self.output_formatter = Formatter.JSON
         
     def __init__(self, model):
         """ Copy-constructor """
@@ -27,24 +27,28 @@ class Model():
     def path():
         return '/FuelModels/'
 
-    @abstractmethod
-    def get_metadata(self):
-        return self.metadata
-
-    @abstractmethod
-    def get_parameters(self):
-        return self.parameters
-
-    @abstractmethod
-    def get_outputs(self):
-        return self.outputs
-
-    @abstractmethod
-    def get_tolerance(self):
-        return self.tolerance
+    # @abstractmethod
+    # def get_metadata(self):
+    #     return self.metadata
+    #
+    # @abstractmethod
+    # def get_parameters(self):
+    #     return self.parameters
+    #
+    # @abstractmethod
+    # def get_outputs(self):
+    #     return self.outputs
+    #
+    # @abstractmethod
+    # def get_tolerance(self):
+    #     return self.tolerance
     
     @abstractmethod
-    def answer(self, query: SpatioTemporalQuery) -> ModelResult:
+    def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
+        return None
+    
+    @abstractmethod
+    def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
         return None
 
     pass

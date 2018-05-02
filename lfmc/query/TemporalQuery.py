@@ -1,7 +1,7 @@
 from datetime import datetime as dt
 from marshmallow import Schema, fields
 import pandas as pd
-from lfmc.query.Query import Query, QuerySchema
+from lfmc.query.Query import Query
 
 class TemporalQuery(Query):
   """
