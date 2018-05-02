@@ -5,6 +5,8 @@ from marshmallow import Schema
 from lfmc.results.ModelResult import ModelResult
 from lfmc.results.Formatter import Formatter
 from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
+import xarray as xr
+
 
 class Model():
     def __init__(self):
@@ -14,7 +16,7 @@ class Model():
         self.outputs = {}
         self.tolerance = 0
         self.output_formatter = Formatter.JSON
-        
+
     def __init__(self, model):
         """ Copy-constructor """
         self.name = model.name
@@ -42,16 +44,17 @@ class Model():
     # @abstractmethod
     # def get_tolerance(self):
     #     return self.tolerance
-    
+
     @abstractmethod
     def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
         return None
-    
+
     @abstractmethod
     def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
         return None
 
     pass
+
 
 class ModelSchema(Schema):
     name = hug.types.Text

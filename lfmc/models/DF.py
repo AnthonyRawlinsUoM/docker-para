@@ -1,4 +1,5 @@
-import os, os.path
+import os
+import os.path
 from lfmc.results.Author import Author
 import datetime as dt
 from lfmc.models.Model import Model
@@ -6,6 +7,7 @@ from lfmc.results.ModelResult import ModelResult
 from lfmc.models.ModelMetaData import ModelMetaData
 from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
 from lfmc.models.dummy_results import DummyResults
+import xarray as xr
 
 
 class DFModel(Model):
@@ -15,9 +17,12 @@ class DFModel(Model):
 
         # TODO - Proper metadata!
         authors = [
-            Author(name="Test1", email="test1@example.com", organisation="Test Organisation"),
-            Author(name="Test2", email="test2@example.com", organisation="Test Organisation"),
-            Author(name="Test3", email="test3@example.com", organisation="Test Organisation")
+            Author(name="Test1", email="test1@example.com",
+                   organisation="Test Organisation"),
+            Author(name="Test2", email="test2@example.com",
+                   organisation="Test Organisation"),
+            Author(name="Test3", email="test3@example.com",
+                   organisation="Test Organisation")
         ]
         pub_date = dt.datetime(2015, 9, 9)
 
@@ -26,7 +31,7 @@ class DFModel(Model):
 
         self.path = os.path.abspath(
             '/media/arawlins/Backups/DataSources/geoserver_data/FuelModels/Drought_Factor') + '/'
-        
+
         self.outputs = {
             "type": "index",
             "readings": {
@@ -36,7 +41,7 @@ class DFModel(Model):
                 "suffix": ".nc"
             }
         }
-    
+
     def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
         # MAGIC HAPPENS HERE
 
@@ -44,7 +49,6 @@ class DFModel(Model):
         dr = DummyResults()
         dps = dr.dummy_data(query)
         return ModelResult(self.name, dps)
-    
 
     def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
         return xr.DataArray(None)

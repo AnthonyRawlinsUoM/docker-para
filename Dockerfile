@@ -6,7 +6,8 @@ COPY ./sources.list /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install -y build-essential
 RUN apt-get install -y nano
-RUN conda install -y pandas xarray simplejson numpy rasterio
+RUN conda update -n base conda
+RUN conda install -y pandas xarray simplejson numpy rasterio opencv
 RUN pip install hug -U 
 RUN pip install marshmallow python-swiftclient python-keystoneclient
 RUN pip install netcdf4

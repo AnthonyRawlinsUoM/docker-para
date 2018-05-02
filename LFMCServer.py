@@ -60,9 +60,13 @@ async def fuel(lat1: fields.Decimal(as_string=True),
 
 @hug.cli()
 @hug.post('/fuel', versions=1, output=hug.output_format.pretty_json)
-async def fuel(geo_json: fields.String(),
+async def fuel(geo_json,
                start: fields.String(),
                finish: fields.String(),
+               lat1: fields.Decimal(as_string=True),
+               lon1: fields.Decimal(as_string=True),
+               lat2: fields.Decimal(as_string=True),
+               lon2: fields.Decimal(as_string=True),
                models: hug.types.delimited_list(',')):
 
     stq = SpatioTemporalQuery(lat1, lon1, lat2, lon2, start, finish)

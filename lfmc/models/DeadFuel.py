@@ -111,8 +111,8 @@ class DeadFuelModel(Model):
             }
         }
         self.output_formatter = Formatter.JSON
-        self.storage_engine = LocalStorage(
-            {"parameters": self.parameters, "outputs": self.outputs})
+        # self.storage_engine = LocalStorage(
+        #     {"parameters": self.parameters, "outputs": self.outputs})
 
     async def dataset_files(self, when):
         if self.date_is_cached(when):
@@ -152,16 +152,28 @@ class DeadFuelModel(Model):
                 lat1, lon1, lat2, lon2 = query.spatial.expanded(0.05)
 
                 # restrict coverage to extents of ds
-                lat1 = math.max(lat1, ds["latitude"].min())
-                lon1 = math.max(lon1, ds["longitude"].min())
-                lat2 = math.min(lat2, ds["latitude"].max())
-                lon2 = math.min(lon2, ds["longitude"].max())
+                lat1 = max(lat1, ds["latitude"].min())
+                lon1 = max(lon1, ds["longitude"].min())
+                lat2 = min(lat2, ds["latitude"].max())
+                lon2 = min(lon2, ds["longitude"].max())
 
                 sr = ds.sel(latitude=slice(lat1, lat2),
                             longitude=slice(lon1, lon2))
                 sr.load()
 
-        return xr.DataArray(sr)
+        return sr
+
+    async def get_timeseries(self, query: ShapeQuery) -> ModelResult:
+        """
+        Essentially just time slicing the resultcube.
+        DataPoint actually handles the creation of values from stats.
+        :param query:
+        :return:
+        """
+        sr = await (self.get_resultcube(query))
+        dps = [self.get_datapoint_for_param(b=sr.isel(time=t), param="DFMC")
+               for t in range(0, len(sr["time"]))]
+        return ModelResult(model_name=self.name, data_points=dps)
 
     async def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
         """
