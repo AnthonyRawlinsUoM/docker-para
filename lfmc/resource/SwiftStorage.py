@@ -1,41 +1,24 @@
 from swiftclient import client, exceptions
 from lfmc.resource.Storable import Storable
 
+import logging
+logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG, 
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger=logging.getLogger(__name__)
 
-class SwiftStore(Storable):
+class SwiftStorage(Storable):
 
-  def __init__(self, url, username, password, project, container):
-    """Short summary.
-
-    Parameters
-    ----------
-    url : type
-        Description of parameter `url`.
-    username : type
-        Description of parameter `username`.
-    password : type
-        Description of parameter `password`.
-    project : type
-        Description of parameter `project`.
-    container : type
-        Description of parameter `container`.
-
-    Returns
-    -------
-    type
-        Description of returned object.
-
-    """
-      self.url = url
-      self.username = usernmae
-      self.password = password
-      self.project_name = project
-      self.container_name = container
-    # self.url = 'https://keystone.rc.nectar.org.au:5000/v3/'
-    # self.username = 'anthony.rawlins@unimelb.edu.au'
-    # self.password = 'MDI3NjkwMzcwMjZjYmQz'
-    # self.project_name = 'LFMC'
-    # self.container_name = 'MODIS'
+  def __init__:
+      # self.url = url
+      # self.username = usernmae
+      # self.password = password
+      # self.project_name = project
+      # self.container_name = container
+    self.url = 'https://keystone.rc.nectar.org.au:5000/v3/'
+    self.username = 'anthony.rawlins@unimelb.edu.au'
+    self.password = 'MDI3NjkwMzcwMjZjYmQz'
+    self.project_name = 'LFMC'
+    self.container_name = 'MODIS'
     self.swift = client.Connection(authurl=self.url, user=self.username, key=self.password,
                                    tenant_name=self.project_name, auth_version='3')
 
@@ -47,14 +30,15 @@ class SwiftStore(Storable):
     success = False
     try:
       resp_headers = self.swift.head_object('MODIS', object_name)
-      print("%s exists." % object_name)
+      logger.debug("%s exists." % object_name)
       success = True
     except exceptions.ClientException as e:
       if e.http_status == '404':
-        print("The object: %s was not found." % object_name)
+        logger.debug("The object: %s was not found." % object_name)
       else:
-        print("An error occured checking the existence of object: %s" % object_name)
-    return success
+        logger.debug("An error occured checking the existence of object: %s" % object_name)
+    finally:
+        return success
 
   def swift_get_modis(self, object_name):
     if self.swift_check_modis(object_name):

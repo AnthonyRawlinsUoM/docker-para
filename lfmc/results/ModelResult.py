@@ -1,10 +1,9 @@
 from marshmallow import Schema, fields
 from lfmc.results.DataPoint import DataPoint, DataPointSchema
-from lfmc.models.ModelMetaData import ModelMetaData, ModelMetaDataSchema
 
 
 class ModelResult:
-    def __init__(self, model_name, data_points):
+    def __init__(self, model_name: str, data_points: [DataPoint]):
         """Short summary.
 
         Parameters

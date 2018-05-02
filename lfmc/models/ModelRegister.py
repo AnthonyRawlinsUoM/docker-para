@@ -7,6 +7,7 @@ from lfmc.models.FFDI import FFDIModel
 from lfmc.models.KBDI import KBDIModel
 from lfmc.models.GFDI import GFDIModel
 from lfmc.models.AWRA import AWRAModel
+from lfmc.models.DF import DFModel
 
 
 import pandas as pd
@@ -19,7 +20,8 @@ class ModelRegister:
         gfdi = GFDIModel()
         kbdi = KBDIModel()
         awra = AWRAModel()
-    
+        drought = DFModel()
+        
         self.models = [
                         {'model_name': dead_fuel.name,
                          'model': dead_fuel},
@@ -31,8 +33,10 @@ class ModelRegister:
                          'model': gfdi},
                         {'model_name': awra.name,
                           'model': awra},
-                         {'model_name': kbdi.name,
-                           'model': kbdi}
+                        {'model_name': kbdi.name,
+                          'model': kbdi},
+                        {'model_name': drought.name,
+                          'model': drought}
                       ]
         self.model_names = self.get_models()
     

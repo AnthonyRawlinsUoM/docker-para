@@ -8,10 +8,10 @@ from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
 from lfmc.models.dummy_results import DummyResults
 
 
-class KBDIModel(Model):
+class DFModel(Model):
 
     def __init__(self):
-        self.name = "kbdi"
+        self.name = "ffdi"
 
         # TODO - Proper metadata!
         authors = [
@@ -24,7 +24,8 @@ class KBDIModel(Model):
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
                                       doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
 
-        self.path = os.path.abspath(Model.path() + 'KBDI') + '/'
+        self.path = os.path.abspath(
+            '/media/arawlins/Backups/DataSources/geoserver_data/FuelModels/Drought_Factor') + '/'
         
         self.outputs = {
             "type": "index",
