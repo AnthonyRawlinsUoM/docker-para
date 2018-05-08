@@ -3,7 +3,6 @@ import xarray as xr
 from abc import abstractmethod
 from marshmallow import Schema
 from lfmc.results.ModelResult import ModelResult
-from lfmc.results.Formatter import Formatter
 from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
 import xarray as xr
 
@@ -15,7 +14,6 @@ class Model():
         self.parameters = {}
         self.outputs = {}
         self.tolerance = 0
-        self.output_formatter = Formatter.JSON
 
     def __init__(self, model):
         """ Copy-constructor """

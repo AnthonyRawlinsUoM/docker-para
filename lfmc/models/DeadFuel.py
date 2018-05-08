@@ -13,9 +13,8 @@ import asyncio
 from lfmc.models.Model import Model
 from lfmc.models.ModelMetaData import ModelMetaData
 from lfmc.results.DataPoint import DataPoint
+from lfmc.results.MPEGFormatter import MPEGFormatter
 from lfmc.results.ModelResult import ModelResult
-from lfmc.results.Formatter import Formatter
-from lfmc.resource.LocalStorage import LocalStorage
 from lfmc.query.ShapeQuery import ShapeQuery
 from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
 
@@ -110,7 +109,7 @@ class DeadFuelModel(Model):
                 "suffix": ".nc",
             }
         }
-        self.output_formatter = Formatter.JSON
+
         # self.storage_engine = LocalStorage(
         #     {"parameters": self.parameters, "outputs": self.outputs})
 
@@ -121,9 +120,11 @@ class DeadFuelModel(Model):
             return self.do_compilation(await asyncio.gather(*[self.collect_parameter_data(param, when)
                                                               for param in self.parameters]), when)
 
-    async def mpg(self, query: SpatioTemporalQuery):
-        sr = await (self.get_resultcube(query))
-        mp4 = await (Formatter.MP4.format(sr, "DFMC"))
+    async def mpg(self, query: ShapeQuery):
+        sr = await (self.get_shaped_resultcube(query))
+
+        logger.debug(sr)
+        mp4 = await (MPEGFormatter.format(sr, "DFMC"))
         return mp4
 
     # ShapeQuery

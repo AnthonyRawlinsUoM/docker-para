@@ -29,9 +29,9 @@ class DataPoint:
         self.name = observation_time
         self.value = value
         self.mean = mean
-        self.minimum = minimum
-        self.maximum = maximum
-        self.deviation = deviation
+        self.min = minimum
+        self.max = maximum
+        self.std = deviation
 
 
 class DataPointSchema(Schema):
@@ -40,6 +40,6 @@ class DataPointSchema(Schema):
     name = fields.String()
     value = fields.Decimal()
     mean = fields.Decimal()
-    minimum = fields.Decimal()
-    maximum = fields.Decimal()
-    deviation = fields.Decimal()
+    min = fields.Decimal()
+    max = fields.Decimal()
+    std = fields.Decimal()

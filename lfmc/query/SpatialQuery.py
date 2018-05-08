@@ -1,4 +1,4 @@
-from lfmc.query.Query import Query
+from lfmc.query.Query import Query, QuerySchema
 from marshmallow import Schema, fields
 import numpy as np
 import math
@@ -33,6 +33,8 @@ class SpatialQuery(Query):
         self.lon1 = lon1
         self.lat2 = lat2
         self.lon2 = lon2
+
+        self.schema = SpatialQuerySchema()
 
     def restricted(self, tolerance):
         lat1 = SpatialQuery.round_up(np.float64(self.lat1), tolerance)
@@ -70,14 +72,15 @@ class SpatialQuery(Query):
     pass
 
 
-class SpatialQuerySchema(Schema):
+class SpatialQuerySchema(QuerySchema):
     lat1 = fields.Decimal(places=8, as_string=True)
     lon1 = fields.Decimal(places=8, as_string=True)
     lat2 = fields.Decimal(places=8, as_string=True)
     lon2 = fields.Decimal(places=8, as_string=True)
 
+
 # sq = SpatialQuery(-10, 110, -45, 155)
 # schema = SpatialQuerySchema()
 # data, errors = schema.dump(sq)
-# 
+#
 # data

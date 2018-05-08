@@ -1,47 +1,48 @@
 from lfmc.query.Query import Query, QuerySchema
 from marshmallow import Schema, fields
-from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
+from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery, SpatioTemporalQuerySchema
 from lfmc.query.TemporalQuery import TemporalQuery, TemporalQuerySchema
 from lfmc.query.SpatialQuery import SpatialQuery, SpatialQuerySchema
 
-import geopandas as gp
+# import geopandas as gp
 import numpy as np
-import pandas as pd
+# import pandas as pd
 import xarray as xr
 import regionmask
 
 import json
-import glob
-import time
+# import glob
+# import time
 import cv2
 
 from numpy import asarray
 from scipy.spatial import ConvexHull
 
-import cartopy.feature as cfeature
-import cartopy.crs as ccrs
+# import cartopy.feature as cfeature
+# import cartopy.crs as ccrs
 
 import shapely
-from shapely.wkt import dumps, loads
+# from shapely.wkt import dumps, loads
 from shapely.geometry import Polygon, mapping, shape
-from shapely import affinity
+# from shapely import affinity
 
 from affine import Affine
 
-import fiona
-from fiona.crs import from_epsg
-
-import rasterio
-import rasterio.mask
-from rasterio import features
+# import fiona
+# from fiona.crs import from_epsg
+#
+# import rasterio
+# import rasterio.mask
+# from rasterio import features
 from rasterio.features import rasterize
 import logging
+
 logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class ShapeQuery(SpatioTemporalQuery):
+class ShapeQuery(SpatialQuery, TemporalQuery):
 
     def __init__(self, start, finish, geo_json: json, weighted=False):
 
@@ -105,12 +106,14 @@ class ShapeQuery(SpatioTemporalQuery):
         hull = ShapeQuery.get_query_hull(self.rmask)
         lat1, lon2, lat2, lon1 = hull.bounds
 
-        logger.debug(lat1, lon1, lat2, lon2)
+        # logger.debug(lat1, lon1, lat2, lon2)
 
         self.spatio_temporal_query = SpatioTemporalQuery(
             lat1, lon1, lat2, lon2, start, finish)
         self.temporal = self.spatio_temporal_query.temporal
         self.spatial = self.spatio_temporal_query.spatial
+
+        self.schema = ShapeQuerySchema()
 
     def get_selections(self):
         return self.selections
@@ -123,6 +126,10 @@ class ShapeQuery(SpatioTemporalQuery):
 
     def geo_json(self):
         return self.geo_json
+
+    def logResponse(self):
+        self.temporal.logResponse()
+        self.spatial.logResponse()
 
     @staticmethod
     def get_bbox(poly: shapely.geometry.Polygon):
@@ -138,26 +145,34 @@ class ShapeQuery(SpatioTemporalQuery):
 
     @staticmethod
     def get_corners(poly: shapely.geometry.Polygon):
-        bb = bounds_to_bbox(poly)
+        bb = ShapeQuery.bounds_to_bbox(poly)
         return [(bb[0], bb[2]), (bb[0], bb[3]), (bb[1], bb[3]), (bb[1], bb[2])]
 
     @staticmethod
     def get_buffered_coords(poly, kilometers):
-        return transform_to_meters(poly).buffer(kilometers)
+        return ShapeQuery.transform_to_meters(poly).buffer(kilometers)
 
     @staticmethod
     def transform_to_meters(poly):
+
+        # TODO
+        affine = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
+
         new_points = [~affine * (point) for point in asarray(poly.exterior)]
-    #     print(new_points)
+        #     print(new_points)
         return shapely.geometry.Polygon(new_points)
 
     @staticmethod
     def transform_to_latlong(poly):
+
+        # TODO
+        affine = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
+
         return shapely.geometry.Polygon([affine * (point) for point in asarray(poly.exterior)])
 
     @staticmethod
     def as_buffered(poly, kilometers):
-        return transform_to_latlong(get_buffered_coords(poly, kilometers))
+        return ShapeQuery.transform_to_latlong(ShapeQuery.get_buffered_coords(poly, kilometers))
 
     # def transform_selection(regionmask_obj):
     #     aff = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
@@ -166,7 +181,8 @@ class ShapeQuery(SpatioTemporalQuery):
     #     _pixel_coords = [~aff * (coord) for coord in all_points]
     #     return _pixel_coords
 
-    def get_super_sampled_mask(self, scaled_transform=[0.005, 0.0, 111.975, 0.0, -0.005, -9.974999999999994], out_shape=(886, 691)):
+    def get_super_sampled_mask(self, scaled_transform=[0.005, 0.0, 111.975, 0.0, -0.005, -9.974999999999994],
+                               out_shape=(886, 691)):
         rparams = dict(
             transform=scaled_transform,
             out_shape=(10 * out_shape[1], 10 * out_shape[0])
@@ -206,3 +222,8 @@ class ShapeQuery(SpatioTemporalQuery):
         logger.debug(fuel_moistures)
 
         return fuel_moistures
+
+
+class ShapeQuerySchema(SpatioTemporalQuerySchema):
+    spatio_temporal = fields.Nested(SpatioTemporalQuerySchema)
+    geo_json = fields.String()

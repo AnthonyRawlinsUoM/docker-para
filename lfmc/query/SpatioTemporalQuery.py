@@ -33,12 +33,19 @@ class SpatioTemporalQuery(Query):
         self.spatial = SpatialQuery(lat1, lon1, lat2, lon2)
         self.temporal = TemporalQuery(start, finish)
 
+        self.schema = SpatioTemporalQuerySchema()
+
     def dates(self):
         return self.temporal.dates()
 
+    def logResponse(self):
+        self.spatial.logResponse()
+        self.temporal.logResponse()
 
-class SpatioTemporalQuerySchema(Schema):
-    meta = fields.Nested(QuerySchema)
+    pass
+
+
+class SpatioTemporalQuerySchema(SpatialQuerySchema, TemporalQuerySchema):
     spatial = fields.Nested(SpatialQuerySchema)
     temporal = fields.Nested(TemporalQuerySchema)
 
