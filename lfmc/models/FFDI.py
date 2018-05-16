@@ -1,16 +1,20 @@
+import asyncio
 import os
 import os.path
+import glob
+from lfmc.models.BomBasedModel import BomBasedModel
 from lfmc.results.Author import Author
 import datetime as dt
 from lfmc.models.Model import Model
-from lfmc.results.ModelResult import ModelResult
 from lfmc.models.ModelMetaData import ModelMetaData
-from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
-from lfmc.models.dummy_results import DummyResults
-import xarray as xr
+import logging
+
+logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger = logging.getLogger(__name__)
 
 
-class FFDIModel(Model):
+class FFDIModel(BomBasedModel):
 
     def __init__(self):
         self.name = "ffdi"
@@ -30,24 +34,16 @@ class FFDIModel(Model):
                                       doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
 
         self.path = os.path.abspath(Model.path() + 'FFDI') + '/'
-
+        self.crs = "EPSG:3111"
         self.outputs = {
             "type": "index",
             "readings": {
                 "path": self.path,
                 "url": "",
-                "prefix": self.name,
+                "prefix": "FFDI_SFC",
                 "suffix": ".nc"
             }
         }
 
-    def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
-        # MAGIC HAPPENS HERE
-
-        # An array of mockup DataPoints for testing only
-        dr = DummyResults()
-        dps = dr.dummy_data(query)
-        return ModelResult(self.name, dps)
-
-    def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
-        return xr.DataArray(None)
+    def netcdf_name_for_date(self, when):
+        return [p + "/IDV71117_VIC_FFDI_SFC.nc" for p in glob.glob(Model.path() + "Weather/{}*".format(when.strftime("%Y%m%d")))]

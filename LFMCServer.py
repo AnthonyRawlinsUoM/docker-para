@@ -2,6 +2,8 @@ import hug
 import asyncio
 
 from marshmallow import fields, pprint
+
+from lfmc.models.Model import ModelSchema
 from lfmc.query.ShapeQuery import ShapeQuery
 from lfmc.results.ModelResult import ModelResultSchema
 from lfmc.models.ModelRegister import ModelRegister, ModelsRegisterSchema
@@ -12,7 +14,7 @@ import pandas as pd
 import xarray as xr
 
 import logging
-
+import lfmc.config.debug as dev
 logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
@@ -45,8 +47,7 @@ async def fuel(geo_json,
 
     rm = RequestMonitor()
     rm.log_request(query)
-
-    logger.debug(query)
+    logger.info(query)
 
     # Which models are we working with?
     model_subset = ['dead_fuel']
@@ -58,30 +59,33 @@ async def fuel(geo_json,
 
     # Default case
     response = None
-
+    errors = None
     # Switch schema on response_as
     # 0. Timeseries JSON
     # 1. MP4
     # 2. NetCDF
     if response_as == 0:
-        logger.debug("Responding to JSON query...")
+        logger.info("Responding to JSON query")
         schema = ModelResultSchema(many=True)
         response, errors = schema.dump(
             await asyncio.gather(*[mr.get(model).get_shaped_timeseries(query) for model in model_subset]))
-        logger.debug(response)
 
     elif response_as == 1:
-        logger.debug("Responding to MP4 query...")
+        logger.info("Responding to MP4 query...")
         # TODO - only returns first model at the moment
         response = (await asyncio.gather(*[mr.get("dead_fuel").mpg(query)]))[0]
         # response = await mr.get("dead_fuel").mpg(query)
-        logger.debug(response)
 
     elif response_as == 2:
-        logger.debug("Responding to NETCDF query...")
+        logger.info("Responding to NETCDF query...")
         # TODO - only returns first model at the moment
         response = (await asyncio.gather(*[mr.get(model).get_netcdf(query) for model in model_subset]))[0]
+
+    if dev.DEBUG:
         logger.debug(response)
+
+    if errors is not None:
+        logger.warning(errors)
 
     # Default Response
     query.logResponse()
@@ -126,7 +130,15 @@ def monitor_processes():
 def get_models():
     model_register = ModelRegister()
     models_list_schema = ModelsRegisterSchema()
-    resp = models_list_schema.dump(model_register)
+    resp, errors = models_list_schema.dump(model_register)
+    return resp
+
+@hug.cli()
+@hug.get('/model', examples='?name=ffdi', versions=1, content_output=hug.output_format.pretty_json)
+def get_model(name):
+    model_register = ModelRegister()
+    model_schema = ModelSchema()
+    resp, errors = model_schema.dump(model_register.get(name))
     return resp
 
 

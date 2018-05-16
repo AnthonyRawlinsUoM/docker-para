@@ -1,4 +1,4 @@
-import glob
+import asyncio
 import os
 import os.path
 
@@ -13,10 +13,11 @@ logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
-class DFModel(BomBasedModel):
+
+class JasminModel(BomBasedModel):
 
     def __init__(self):
-        self.name = "df"
+        self.name = "jasmin"
 
         # TODO - Proper metadata!
         authors = [
@@ -32,18 +33,19 @@ class DFModel(BomBasedModel):
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
                                       doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
 
-        self.path = os.path.abspath(Model.path() + 'DF') + '/'
+        self.path = os.path.abspath(Model.path() + 'JASMIN') + '/'
 
         self.outputs = {
             "type": "index",
             "readings": {
                 "path": self.path,
                 "url": "",
-                "prefix": "DF_SFC",
+                "prefix": "smd",
                 "suffix": ".nc"
             }
         }
 
     def netcdf_name_for_date(self, when):
-        search_paths = glob.glob(Model.path() + "Weather/{}*".format(when.strftime("%Y%m%d")))
-        return [p + "/IDV71127_VIC_DF_SFC.nc" for p in search_paths]
+        return os.path.abspath(
+            Model.path() + "/JASMIN/rescaled/21vls/jasmin.kbdi/cdf temporal/jasmin.kbdi.cdf_temporal.2lvls.{}.nc".format(
+                when.strftime("%Y")))

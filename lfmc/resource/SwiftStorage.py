@@ -38,9 +38,8 @@ class SwiftStorage(Storable):
                 logger.debug("The object: %s was not found." % object_name)
             else:
                 logger.debug(
-                    "An error occured checking the existence of object: %s" % object_name)
-        finally:
-            return success
+                    "An error occurred checking the existence of object: %s" % object_name)
+        return success
 
     def swift_get_modis(self, object_name):
         if self.swift_check_modis(object_name):
@@ -55,6 +54,20 @@ class SwiftStorage(Storable):
     def swift_put_lfmc(self, file_name):
         container_name = 'LFMC'
         return self.put(container_name, file_name)
+
+    def swift_check_lfmc(self, file_name):
+        success = False
+        try:
+            resp_headers = self.swift.head_object('LFMC', file_name)
+            logger.debug("%s exists." % file_name)
+            success = True
+        except exceptions.ClientException as e:
+            if e.http_status == '404':
+                logger.debug("The object: %s was not found." % file_name)
+            else:
+                logger.debug(
+                    "An error occurred checking the existence of object: %s" % file_name)
+        return success
 
     def put(self, container_name, file_name):
         with open(file_name, 'r+b') as local:

@@ -73,20 +73,6 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
                     abbrevs.append("SEL_%s" % count)
 
                     count += 1
-        # else:
-        #     if geo_json["geometry"]["type"] is "Polygon":
-        #         points = geo_json["geometry"]["coordinates"]
-        #         s = shapely.geometry.Polygon(*points)
-        #         selections.append(s)
-        #
-        #         numbers.append(count)
-        #         if geo_json["properties"] == {}:
-        #             names.append("Selection_%s" % count)
-        #             abbrevs.append("SEL_%s" % count)
-        #         else:
-        #             names.append(geo_json["properties"]["FIRENAME"])
-        #             abbrevs.append("SEL_%s" % count)
-        #         count += 1
 
         logger.debug("Making Region Mask with %s Polygons." % count)
         logger.debug("numbers: %s" % numbers)
@@ -101,7 +87,7 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
         logger.debug(["%s" % sel for sel in selections])
 
         # Do once and store
-        self.mask = self.get_super_sampled_mask()
+        # self.mask = self.get_super_sampled_mask()  # TODO - remove default creation of mask and require setting the transform according to dataset projection
 
         hull = ShapeQuery.get_query_hull(self.rmask)
         lat1, lon2, lat2, lon1 = hull.bounds
@@ -112,8 +98,11 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
             lat1, lon1, lat2, lon2, start, finish)
         self.temporal = self.spatio_temporal_query.temporal
         self.spatial = self.spatio_temporal_query.spatial
-
+        self.transform = [0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994]
         self.schema = ShapeQuerySchema()
+
+    def apply_transform(self, transform, out_shape):
+        self.mask = self.get_super_sampled_mask(transform, out_shape)
 
     def get_selections(self):
         return self.selections
@@ -136,43 +125,37 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
         return list((poly.bounds[0], poly.bounds[2], poly.bounds[1], poly.bounds[3]))
 
     @staticmethod
-    def get_query_hull(regionmask):
-        points = np.concatenate(regionmask.coords, axis=0)
-
+    def get_query_hull(mask):
+        points = np.concatenate(mask.coords, axis=0)
         hull = ConvexHull(points)
-
         return shapely.geometry.Polygon([hull.points[vertex] for vertex in hull.vertices])
 
     @staticmethod
     def get_corners(poly: shapely.geometry.Polygon):
-        bb = ShapeQuery.bounds_to_bbox(poly)
+        bb = ShapeQuery.get_bbox(poly)
         return [(bb[0], bb[2]), (bb[0], bb[3]), (bb[1], bb[3]), (bb[1], bb[2])]
 
-    @staticmethod
-    def get_buffered_coords(poly, kilometers):
-        return ShapeQuery.transform_to_meters(poly).buffer(kilometers)
+    def get_buffered_coords(self, poly, kilometers):
+        return self.transform_to_meters(poly).buffer(kilometers)
 
-    @staticmethod
-    def transform_to_meters(poly):
+    def transform_to_meters(self, poly):
 
         # TODO
-        affine = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
+        affine = Affine(*self.transform)
 
-        new_points = [~affine * (point) for point in asarray(poly.exterior)]
+        new_points = [~affine * point for point in asarray(poly.exterior)]
         #     print(new_points)
         return shapely.geometry.Polygon(new_points)
 
-    @staticmethod
-    def transform_to_latlong(poly):
+    def transform_to_latlong(self, poly):
 
         # TODO
-        affine = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
+        affine = Affine(*self.transform)
 
         return shapely.geometry.Polygon([affine * (point) for point in asarray(poly.exterior)])
 
-    @staticmethod
-    def as_buffered(poly, kilometers):
-        return ShapeQuery.transform_to_latlong(ShapeQuery.get_buffered_coords(poly, kilometers))
+    def as_buffered(self, poly, kilometers):
+        return self.transform_to_latlong(self.get_buffered_coords(poly, kilometers))
 
     # def transform_selection(regionmask_obj):
     #     aff = Affine(0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994)
@@ -181,12 +164,28 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
     #     _pixel_coords = [~aff * (coord) for coord in all_points]
     #     return _pixel_coords
 
-    def get_super_sampled_mask(self, scaled_transform=[0.005, 0.0, 111.975, 0.0, -0.005, -9.974999999999994],
-                               out_shape=(886, 691)):
+    def get_super_sampled_mask(self, transform=None,
+                               data_shape=(886, 691)):
+
+        if transform is not None:
+            scaled_transform = transform
+        else:
+            scaled_transform = self.transform
+
+        scaled_transform[0] /= 10
+        scaled_transform[4] /= 10
+
+        logger.debug("### --> scaled transform = %s" % scaled_transform[0])
+
+        mask_shape = (10 * data_shape[1], 10 * data_shape[0])
+        out_shape = (data_shape[1], data_shape[0])
+
         rparams = dict(
             transform=scaled_transform,
-            out_shape=(10 * out_shape[1], 10 * out_shape[0])
+            out_shape=mask_shape
         )
+        logger.debug(scaled_transform)
+        logger.debug(out_shape)
 
         # selection rasterization using rasterio!
         raster = rasterize(self.selections, **rparams)
@@ -196,13 +195,27 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
                              interpolation=cv2.INTER_AREA)
         # Greyscale channel
         resized = np.array(np.asarray(resized) * 255 + 0.5, np.uint8)
+
+        logger.debug("\n--> The mask is: %s\n--> and has the shape:" % resized)
+        logger.debug(resized.shape)
         return resized
 
     def apply_mask_to(self, result_cube: xr.DataArray) -> xr.DataArray:
 
+        s = result_cube[result_cube.attrs['var_name']].isel(time=0).shape
+        logger.debug(s)
+
+        self.weighted = False
+
         if self.weighted:
-            fuel_moistures = result_cube.where(
-                self.mask != 0) * self.mask / 255
+            # Apply Spatial Mask on every timeslice.
+            # TODO - DEBUG THIS - use the affine / transform of the resultcube to create and project the mask!!!
+            mask = self.get_super_sampled_mask(transform=[0.05, 0.0, 111.975, 0.0, -0.05, -9.974999999999994],
+                                               data_shape=s)
+            logger.debug(mask)
+            mask3d = np.broadcast_to(mask != 0, result_cube[result_cube.attrs['var_name']].shape)
+            fuel_moistures = result_cube.where(mask3d != 0) * (mask3d / 255)
+
         else:
             # Binary Masking
             mask = self.rmask.mask(

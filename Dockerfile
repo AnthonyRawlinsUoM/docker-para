@@ -15,10 +15,12 @@ RUN apt-get install -y libgl1-mesa-glx
 RUN apt-get install -y ffmpeg
 RUN conda install -y geopandas cartopy
 RUN pip install regionmask
+RUN pip install rx
 
 ADD lfmc /lfmc
 ADD VERSION .
 ADD LFMCServer.py /
+ADD logviewer.sh /
 WORKDIR /FuelModels/
 EXPOSE 8002
 ENTRYPOINT ["hug", "-f", "/LFMCServer.py", "-p", "8002"]

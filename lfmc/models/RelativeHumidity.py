@@ -1,4 +1,4 @@
-import glob
+import asyncio
 import os
 import os.path
 
@@ -7,16 +7,18 @@ from lfmc.results.Author import Author
 import datetime as dt
 from lfmc.models.Model import Model
 from lfmc.models.ModelMetaData import ModelMetaData
+
 import logging
 
 logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
-class DFModel(BomBasedModel):
+
+class RHModel(BomBasedModel):
 
     def __init__(self):
-        self.name = "df"
+        self.name = "temperature"
 
         # TODO - Proper metadata!
         authors = [
@@ -32,18 +34,18 @@ class DFModel(BomBasedModel):
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
                                       doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
 
-        self.path = os.path.abspath(Model.path() + 'DF') + '/'
-
+        self.path = os.path.abspath(Model.path() + 'Weather') + '/'
+        self.crs = "EPSG:3111"
         self.outputs = {
             "type": "index",
             "readings": {
                 "path": self.path,
                 "url": "",
-                "prefix": "DF_SFC",
+                "prefix": "Tmx",
                 "suffix": ".nc"
             }
         }
 
     def netcdf_name_for_date(self, when):
-        search_paths = glob.glob(Model.path() + "Weather/{}*".format(when.strftime("%Y%m%d")))
-        return [p + "/IDV71127_VIC_DF_SFC.nc" for p in search_paths]
+        return os.path.abspath(
+            Model.path() + "/Dead_FM/Tmx/Tmx_{}.grid.nc".format(when.strftime("%Y%m%d")))
