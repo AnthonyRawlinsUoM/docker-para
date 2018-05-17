@@ -1,5 +1,9 @@
-from marshmallow import fields, Schema
+import datetime as dt
 
+import rx
+from marshmallow import fields, Schema
+from rx import Observable
+from lfmc.config import debug as dev
 from lfmc.models.JASMIN import JasminModel
 from lfmc.models.Model import Model, ModelSchema
 from lfmc.models.DeadFuel import DeadFuelModel
@@ -9,15 +13,23 @@ from lfmc.models.KBDI import KBDIModel
 from lfmc.models.GFDI import GFDIModel
 from lfmc.models.AWRA import AWRAModel
 from lfmc.models.DF import DFModel
-from lfmc.models.Matthews import Matthews
+# from lfmc.models.Matthews import Matthews
+from lfmc.models.dummy_results import DummyResults
 
-
-import pandas as pd
-
+from lfmc.models.rx.ObservableModelRegister import ObservableModelRegister
 from lfmc.models.Temp import TempModel
+from lfmc.query import ShapeQuery
+from lfmc.results.DataPoint import DataPoint
+from lfmc.results.ModelResult import ModelResult
+import logging
+
+logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger = logging.getLogger(__name__)
 
 
-class ModelRegister:
+class ModelRegister(Observable):
+
     def __init__(self):
         dead_fuel = DeadFuelModel()
         # live_fuel = LiveFuelModel()
@@ -28,7 +40,7 @@ class ModelRegister:
         awra = AWRAModel()
         jasmin = JasminModel()
         drought = DFModel()
-        matthews = Matthews()
+        # matthews = Matthews()
 
         self.models = [
             {'model_name': dead_fuel.name,
@@ -48,11 +60,13 @@ class ModelRegister:
             {'model_name': kbdi.name,
              'model': kbdi},
             {'model_name': drought.name,
-             'model': drought},
-            {'model_name': matthews.name,
-             'model': matthews}
+             'model': drought}
+            # ,
+            # {'model_name': matthews.name,
+            #  'model': matthews}
         ]
         self.model_names = self.get_models()
+        pass
 
     def register_new_model(self, new_model: Model):
         self.models.append({'model_name': new_model.name,
@@ -69,6 +83,29 @@ class ModelRegister:
             if m['model_name'] == model_name:
                 return m['model']
         return None
+
+    def apply_shape_for_timeseries(self, query: ShapeQuery) -> ModelResult:
+
+        return None
+
+    def subscribe(self, observer):
+        if dev.DEBUG:
+            logger.debug("Got subscription. Building response.")
+
+            for model in self.models:
+                dps = []
+                logger.debug('Building dummy response for model: %s' % model['model_name'])
+                for j in range(30):
+                    dps.append(DummyResults.dummy_single(j))
+                    observer.on_next(ModelResult(model_name=model['model_name'], data_points=dps))
+            observer.on_completed()
+        else:
+            dps = []
+            for model in self.models:
+                model.subscribe(observer)
+
+            # rx.Observable.merge()
+        pass
 
 
 class ModelsRegisterSchema(Schema):

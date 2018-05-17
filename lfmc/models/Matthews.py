@@ -148,23 +148,18 @@ class Matthews(Model):
         sr = None
         fs = await asyncio.gather(*[self.dataset_files(when) for when in shape_query.temporal.dates()])
 
-        fs = [pf for pf in fs if pf is not None]  # <-- Check we actually have datafiles
+        fs = [pf for pf in fs if Path(pf).is_file()]  # <-- Check we actually have datafiles
 
         if len(fs) > 0:
-
-            logger.debug("Found %s potential files for opening as MFDS." % len(fs))
             logger.debug(fs)
             with xr.open_mfdataset(fs) as ds:
+                logger.debug(ds)
                 if "observations" in ds.dims:
                     sr = ds.squeeze("observations")
 
             return shape_query.apply_mask_to(sr)
 
         return xr.DataArray([])
-
-    # TODO!!
-    async def get_timeseries(self, query: SpatioTemporalQuery) -> ModelResult:
-        return None
 
     def netcdf_name_for_date(self, when):
 

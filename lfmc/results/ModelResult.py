@@ -1,9 +1,10 @@
+from hug.json_module import json
 from marshmallow import Schema, fields
 from lfmc.results.DataPoint import DataPoint, DataPointSchema
 
 
 class ModelResult:
-    def __init__(self, model_name: str, data_points: [DataPoint]):
+    def __init__(self, model_name: fields.String(), data_points: [DataPoint]):
         """Short summary.
 
         Parameters
@@ -20,6 +21,10 @@ class ModelResult:
         # An Array (1D) of DataPoints
         self.series = data_points
         self.name = model_name
+
+    def __str__(self):
+        schema = ModelResultSchema()
+        return schema.dumps(self)
 
 
 class ModelResultSchema(Schema):

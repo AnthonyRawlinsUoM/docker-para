@@ -1,11 +1,12 @@
+import hug
 from hug.json_module import json
 from marshmallow import Schema, fields
 import datetime as dt
 
 
 class DataPoint:
-    def __init__(self, observation_time: fields.String(), value: fields.Decimal(), mean: fields.Decimal(),
-                 minimum: fields.Decimal(), maximum: fields.Decimal(), deviation: fields.Decimal()):
+    def __init__(self, observation_time: fields.String(), value: float, mean: float,
+                 minimum: float, maximum: float, deviation: float):
         """Short summary.
 
         Parameters
@@ -45,8 +46,8 @@ class DataPointSchema(Schema):
     # date = fields.Date(attribute="test")
     # name = fields.DateTime(format="%Y-%m-%dT00:00:00.000Z")
     name = fields.String()
-    value = fields.Decimal()
-    mean = fields.Decimal()
-    min = fields.Decimal()
-    max = fields.Decimal()
-    std = fields.Decimal()
+    value = fields.Float()
+    mean = fields.Float()
+    min = fields.Float()
+    max = fields.Float()
+    std = fields.Float()
