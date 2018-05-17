@@ -2,9 +2,11 @@ import hug
 import asyncio
 
 from marshmallow import fields, pprint
+from rx import Observer
 
 from lfmc.models.Model import ModelSchema
 from lfmc.query.ShapeQuery import ShapeQuery
+from lfmc.results import ModelResult
 from lfmc.results.ModelResult import ModelResultSchema
 from lfmc.models.ModelRegister import ModelRegister, ModelsRegisterSchema
 from lfmc.monitor.RequestMonitor import RequestMonitor
@@ -42,6 +44,15 @@ async def fuel(geo_json,
                weighted: fields.Bool(),
                models: hug.types.delimited_list(','),
                response_as: hug.types.number):
+    """
+    :param geo_json:
+    :param start:
+    :param finish:
+    :param weighted:
+    :param models:
+    :param response_as:
+    :return:
+    """
     query = ShapeQuery(start=start, finish=finish,
                        geo_json=geo_json, weighted=weighted)
 
@@ -84,12 +95,57 @@ async def fuel(geo_json,
     if dev.DEBUG:
         logger.debug(response)
 
-    if errors is not None:
-        logger.warning(errors)
+    if len(errors) > 0:
+        logger.exception(errors)
+        return errors
+    else:
+        # Default Response
+        query.logResponse()
+        return response
 
-    # Default Response
-    query.logResponse()
-    return response
+
+@hug.exception(Exception)
+def handle_exception(exception):
+    logger.exception(exception)
+    logger.debug(exception)
+    return {'code': 500, 'error': "Error was:\n" + str(exception)}
+
+
+@hug.cli()
+@hug.post(('/fuel', '/fuel.json', '/fuel.mp4', '/fuel.mov', '/fuel.nc'), versions=2, output=suffix_output)
+def fuel_moisture(geo_json,
+               start: fields.String(),
+               finish: fields.String(),
+               weighted: fields.Bool(),
+               models: hug.types.delimited_list(','),
+               response_as: hug.types.number):
+    """
+        :param geo_json:
+        :param start:
+        :param finish:
+        :param weighted:
+        :param models:
+        :param response_as:
+        :return:
+        """
+    query = ShapeQuery(start=start, finish=finish,
+                       geo_json=geo_json, weighted=weighted)
+
+    mr = ModelRegister()
+    omr = ObservedModelResponder()
+    rm = RequestMonitor()
+    rm.log_request(query)
+    logger.info(query)
+
+    # Which models are we working with?
+    model_subset = ['dead_fuel']
+    if models is not None:
+        model_subset = models
+
+    mr.apply_shape_for_timeseries(query)
+    mr.subscribe(omr)
+
+    return omr.get()
 
 
 @hug.cli()
@@ -126,6 +182,14 @@ def monitor_processes():
 
 
 @hug.cli()
+@api.urls('/log', versions=1)
+def get_log():
+    # log = read_server_log_file()
+    # return log
+    return "No logging yet..."
+
+
+@hug.cli()
 @api.urls('/models', versions=1)
 def get_models():
     model_register = ModelRegister()
@@ -142,7 +206,38 @@ def get_model(name):
     return resp
 
 
+class ObservedModelResponder(Observer):
+    def on_next(self, r: ModelResult):
+
+        logger.debug('## ObservedModelResponder ##')
+        logger.debug('## ---------------------- ##')
+
+        mrs = ModelResultSchema()
+        logger.debug(mrs.dumps(r))
+        self.result = mrs.dumps(r)
+        pass
+
+    def on_error(self, e):
+        logger.error(e)
+        self.result = e
+        pass
+
+    def on_completed(self):
+        logger.info('Complete')
+        # self.result = {"query": "Complete"}
+        pass
+
+    def get(self):
+        resp, errors = self.result
+        return resp
+
+    def __init__(self):
+        self.result = ""
+        pass
+
+
 if __name__ == '__main__':
+    get_log.interface.cli()
     fuel.interface.cli()
     get_models.interface.cli()
     monitors.interface.cli()

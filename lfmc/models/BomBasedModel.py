@@ -85,7 +85,7 @@ class BomBasedModel(Model):
 
         ts = xr1
         ts.attrs['var_name'] = self.outputs["readings"]["prefix"]
-        ts = ts.sel(time=slice(shape_query.temporal.start.strftime("%Y-%m-%dT00:00:00000Z"),
+        ts = ts.sel(time=slice(shape_query.temporal.start.strftime("%Y-%m-%d"),
                                shape_query.temporal.finish.strftime("%Y-%m-%d")))
         return shape_query.apply_mask_to(ts)
 

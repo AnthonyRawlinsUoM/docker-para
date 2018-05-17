@@ -52,7 +52,7 @@ class AWRAModel(Model):
 
     def netcdf_name_for_date(self, when):
         return self.path + "sm_pct_{}_Actual_day.nc".format(when.strftime("%Y"))
-    
+
     async def get_shaped_timeseries(self, query: ShapeQuery) -> ModelResult:
         logger.debug(
             "\n--->>> Shape Query Called successfully on %s Model!! <<<---" % self.name)

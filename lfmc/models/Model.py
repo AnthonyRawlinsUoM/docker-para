@@ -5,30 +5,28 @@ from urllib.error import URLError
 
 import hug
 import os
-import xarray as xr
-from abc import abstractmethod
 from marshmallow import Schema, fields
 from pathlib2 import Path
 
-from lfmc.query import ShapeQuery
 from lfmc.results.DataPoint import DataPoint
-from lfmc.results.ModelResult import ModelResult
-from lfmc.query.SpatioTemporalQuery import SpatioTemporalQuery
-
+from lfmc.models.rx.ObservableModel import ObservableModel
 
 import logging
+
+
 logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
 
-class Model():
+class Model(ObservableModel):
     def __init__(self):
         self.name = "Base Model Class"
         self.metadata = {}
         self.parameters = {}
         self.outputs = {}
         self.tolerance = 0
+        pass
 
     def __init__(self, model):
         """ Copy-constructor """
@@ -37,6 +35,7 @@ class Model():
         self.parameters = model.parameters
         self.outputs = model.outputs
         self.tolerance = model.tolerance
+        pass
 
     @staticmethod
     def path():
@@ -65,8 +64,6 @@ class Model():
     # @abstractmethod
     # def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
     #     return None
-
-
 
     def date_is_cached(self, when):
 
