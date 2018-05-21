@@ -52,7 +52,8 @@ class LiveFuelModel(Model):
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
                                       doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
         self.path = os.path.abspath(Model.path() + 'Live_FM') + '/'
-
+        self.ident = "Live Fuels"
+        self.code = "LFMC"
         self.parameters = {
             "surface relectance band": {
                 "var": "SRB",

@@ -5,6 +5,7 @@ from marshmallow import fields, pprint
 from rx import Observer
 
 from lfmc.models.Model import ModelSchema
+from lfmc.process.Conversion import Conversion
 from lfmc.query.ShapeQuery import ShapeQuery
 from lfmc.results import ModelResult
 from lfmc.results.ModelResult import ModelResultSchema
@@ -197,12 +198,20 @@ def get_models():
     resp, errors = models_list_schema.dump(model_register)
     return resp
 
+
 @hug.cli()
-@hug.get('/model', examples='?name=ffdi', versions=1, content_output=hug.output_format.pretty_json)
+@api.urls('/model', examples='?name=ffdi', versions=1, content_output=hug.output_format.pretty_json)
 def get_model(name):
     model_register = ModelRegister()
     model_schema = ModelSchema()
     resp, errors = model_schema.dump(model_register.get(name))
+    return resp
+
+
+@api.urls('/convert.json', examples='?shp=/path/to/uploaded/file', versions=1, content_output=hug.output_format.file)
+def get_converted_shapefile(shp: str):
+    resp = Conversion.convert(shp)
+    logger.debug(resp)
     return resp
 
 

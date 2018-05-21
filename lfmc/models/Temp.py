@@ -3,6 +3,7 @@ import os
 import os.path
 
 from lfmc.models.BomBasedModel import BomBasedModel
+from lfmc.results.Abstracts import Abstracts
 from lfmc.results.Author import Author
 import datetime as dt
 from lfmc.models.Model import Model
@@ -22,18 +23,15 @@ class TempModel(BomBasedModel):
 
         # TODO - Proper metadata!
         authors = [
-            Author(name="Test1", email="test1@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test2", email="test2@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test3", email="test3@example.com",
-                   organisation="Test Organisation")
+            Author(name="", email="",
+                   organisation="")
         ]
         pub_date = dt.datetime(2015, 9, 9)
-
+        abstract = Abstracts("")
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
-                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
-
+                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010", abstract=abstract)
+        self.ident = "Temperature"
+        self.code = "Tmax"
         self.path = os.path.abspath(Model.path() + 'Weather') + '/'
         self.crs = "EPSG:3111"
         self.outputs = {

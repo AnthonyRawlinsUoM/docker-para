@@ -1,9 +1,11 @@
 from marshmallow import Schema, fields
+
+from lfmc.results.Abstracts import AbstractSchema
 from lfmc.results.Author import AuthorSchema
 
 
 class ModelMetaData:
-    def __init__(self, authors, published_date, fuel_types, doi):
+    def __init__(self, authors, abstract, published_date, fuel_types, doi):
         """Short summary.
 
         Parameters
@@ -22,6 +24,7 @@ class ModelMetaData:
 
         """
         self.authors = authors
+        self.abstract = abstract
         self.published_date = published_date
         self.fuel_types = fuel_types
         self.doi = doi
@@ -29,6 +32,7 @@ class ModelMetaData:
 
 class ModelMetaDataSchema(Schema):
     authors = fields.Nested(AuthorSchema, many=True)
+    abstract = fields.Nested(AbstractSchema, many=False)
     published_date = fields.Date()
-    fuel_types = fields.Nested(fields.String, many=True)
-    doi = fields.Nested(fields.String)
+    fuel_types = fields.String()
+    doi = fields.String()

@@ -6,6 +6,7 @@ import glob
 from lfmc.models.BomBasedModel import BomBasedModel
 from lfmc.query import ShapeQuery
 from lfmc.results import ModelResult
+from lfmc.results.Abstracts import Abstracts
 from lfmc.results.Author import Author
 import datetime as dt
 from lfmc.models.Model import Model
@@ -25,18 +26,18 @@ class KBDIModel(BomBasedModel):
 
         # TODO - Proper metadata!
         authors = [
-            Author(name="Test1", email="test1@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test2", email="test2@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test3", email="test3@example.com",
-                   organisation="Test Organisation")
+            Author(name="Keetch", email="",
+                   organisation=""),
+            Author(name="Byram", email="",
+                   organisation="")
         ]
         pub_date = dt.datetime(2015, 9, 9)
-
+        abstract = Abstracts("")
         self.metadata = ModelMetaData(authors=authors, published_date=pub_date, fuel_types=["surface"],
-                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
+                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010", abstract=abstract)
 
+        self.ident = "Keetch-Byram Drought Index"
+        self.code = "KBDI"
         self.path = os.path.abspath(Model.path() + 'KBDI') + '/'
         self.crs = "EPSG:3111"
         self.outputs = {
@@ -50,9 +51,7 @@ class KBDIModel(BomBasedModel):
         }
 
     def netcdf_name_for_date(self, when):
-        return [p + "/IDV71147_VIC_KBDI_SFC.nc" for p in glob.glob(Model.path() + "Weather/{}*".format(when.strftime("%Y%m%d")))]
+        return self.netcdf_names_for_date(when, "IDV71147_VIC_KBDI_SFC.nc")
 
-    def get_shaped_timeseries(self, query: ShapeQuery) -> ModelResult:
-        return super().get_shaped_timeseries(query)
 
 

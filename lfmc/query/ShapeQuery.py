@@ -215,7 +215,7 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
             logger.debug(mask)
             mask3d = np.broadcast_to(mask != 0, result_cube[result_cube.attrs['var_name']].shape)
             fuel_moistures = result_cube.where(mask3d != 0) * (mask3d / 255)
-
+            logger.debug("Masked by weighted area: ")
         else:
             # Binary Masking
             mask = self.rmask.mask(
@@ -230,8 +230,8 @@ class ShapeQuery(SpatialQuery, TemporalQuery):
             # Can then use WHERE to get Binary True/False masking for all parts
             # of the selection as a unified group...
             fuel_moistures = result_cube.where(region == 0)
+            logger.debug("Masked by binary inclusion: ")
 
-        logger.debug("Masked: ")
         logger.debug(fuel_moistures)
 
         return fuel_moistures

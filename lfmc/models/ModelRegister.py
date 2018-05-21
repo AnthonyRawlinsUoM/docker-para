@@ -42,50 +42,28 @@ class ModelRegister(Observable):
         drought = DFModel()
         # matthews = Matthews()
 
-        self.models = [
-            {'model_name': dead_fuel.name,
-             'model': dead_fuel},
-            # {'model_name': live_fuel.name,
-            #  'model': live_fuel},
-            {'model_name': ffdi.name,
-             'model': ffdi},
-            {'model_name': temp.name,
-             'model': temp},
-            {'model_name': gfdi.name,
-             'model': gfdi},
-            {'model_name': awra.name,
-             'model': awra},
-            {'model_name': jasmin.name,
-             'model': jasmin},
-            {'model_name': kbdi.name,
-             'model': kbdi},
-            {'model_name': drought.name,
-             'model': drought}
-            # ,
-            # {'model_name': matthews.name,
-            #  'model': matthews}
-        ]
+        self.models = [dead_fuel,
+                       ffdi,
+                       temp,
+                       gfdi,
+                       awra,
+                       jasmin,
+                       kbdi,
+                       drought]
+
         self.model_names = self.get_models()
         pass
 
     def register_new_model(self, new_model: Model):
-        self.models.append({'model_name': new_model.name,
-                            'model': new_model})
+        self.models.append(new_model)
 
     def get_models(self):
-        names = []
-        for m in self.models:
-            names.append(m['model_name'])
-        return names
+        return [m.name for m in self.models]
 
     def get(self, model_name):
         for m in self.models:
-            if m['model_name'] == model_name:
-                return m['model']
-        return None
-
-    def apply_shape_for_timeseries(self, query: ShapeQuery) -> ModelResult:
-
+            if m.name == model_name:
+                return m
         return None
 
     def subscribe(self, observer):
@@ -94,10 +72,10 @@ class ModelRegister(Observable):
 
             for model in self.models:
                 dps = []
-                logger.debug('Building dummy response for model: %s' % model['model_name'])
+                logger.debug('Building dummy response for model: %s' % model.name)
                 for j in range(30):
                     dps.append(DummyResults.dummy_single(j))
-                    observer.on_next(ModelResult(model_name=model['model_name'], data_points=dps))
+                    observer.on_next(ModelResult(model_name=model.name, data_points=dps))
             observer.on_completed()
         else:
             dps = []
@@ -109,4 +87,4 @@ class ModelRegister(Observable):
 
 
 class ModelsRegisterSchema(Schema):
-    models = fields.Nested(ModelSchema, only=('model_name'), many=True)
+    models = fields.Nested(ModelSchema, many=True)

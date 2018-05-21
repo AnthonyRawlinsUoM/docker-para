@@ -10,6 +10,7 @@ import urllib.request
 from urllib.error import URLError
 import asyncio
 
+from lfmc.results.Abstracts import Abstracts
 from lfmc.results.Author import Author
 from lfmc.models.Model import Model
 from lfmc.models.ModelMetaData import ModelMetaData
@@ -47,13 +48,26 @@ class Matthews(Model):
 
         pub_date = dt.datetime(2015, 6, 1)
 
+        abstract = Abstracts("This paper presents the first complete process-based model for fuel moisture in the litter layer. \
+        The model predicts fuel moisture by modelling the energy and water budgets of the litter, intercepted precipitation, \
+        and air spaces in the litter. The model was tested against measurements of fuel moisture from two sets of field \
+        observations, one made in Eucalyptus mallee-heath under dry conditions and the other during a rainy period in \
+        Eucalyptus obliqua forest. The model correctly predicted minimum and maximum fuel moisture content and the \
+        timing of minima and maxima in the mallee-heath. Under wet conditions, wetting and drying of the litter profile \
+        were correctly predicted but wetting of the surface litter was over-predicted. The structure of the model and the \
+        dependence of predictions on model parameters were examined using sensitivity and parameter estimation studies. \
+        The results indicated that it should be possible to adapt the model to any forest type by specifying a limited number \
+        of parameters. A need for further experimental research on the wetting of litter during rain was also identified.")
+
         self.metadata = ModelMetaData(authors=authors,
                                       published_date=pub_date,
                                       fuel_types=["profile"],
-                                      doi="http://dx.doi.org/10.13140/RG.2.2.36184.70403")
+                                      doi="http://dx.doi.org/10.13140/RG.2.2.36184.70403",
+                                      abstract=abstract)
 
         self.mode = "wet"  # "wet" or "dry"
-
+        self.ident = "Matthews"
+        self.code = "PFMC"
         self.path = os.path.abspath(Model.path() + 'Matthews') + '/'
         self.output_path = os.path.abspath(self.path + "PFMC") + '/'
         self.data_path = os.path.abspath(Model.path() + "Weather") + '/'
@@ -191,7 +205,6 @@ class Matthews(Model):
         else:
             return False
 
-
     async def get_shaped_timeseries(self, query: ShapeQuery) -> ModelResult:
         logger.debug(
             "\n--->>> Shape Query Called successfully on %s Model!! <<<---" % self.name)
@@ -227,10 +240,3 @@ class Matthews(Model):
         self.set_date(when)
         run = await asyncio.gather(*[self.run_main()])
         return run
-
-    async def get_resultcube(self, query: SpatioTemporalQuery) -> xr.DataArray:
-        return None
-
-    # async def collect_parameter_data(self, param, when):
-    #     """ Data collection is handled by Pipeline for this model. If the nc files aren't in the Weather folder then we dont have them. """
-    #     return None

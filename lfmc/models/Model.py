@@ -8,6 +8,7 @@ import os
 from marshmallow import Schema, fields
 from pathlib2 import Path
 
+from lfmc.models.ModelMetaData import ModelMetaDataSchema
 from lfmc.results.DataPoint import DataPoint
 from lfmc.models.rx.ObservableModel import ObservableModel
 
@@ -26,6 +27,8 @@ class Model(ObservableModel):
         self.parameters = {}
         self.outputs = {}
         self.tolerance = 0
+        self.ident = ""
+        self.code = ""
         pass
 
     def __init__(self, model):
@@ -35,6 +38,9 @@ class Model(ObservableModel):
         self.parameters = model.parameters
         self.outputs = model.outputs
         self.tolerance = model.tolerance
+        self.ident = model.ident
+        self.code = model.code
+
         pass
 
     @staticmethod
@@ -95,16 +101,19 @@ class Model(ObservableModel):
             if hasattr(e, 'reason'):
                 msg = 'We failed to reach a server.'
                 msg += 'Reason: %s' % e.reason
+                raise URLError(msg)
             elif hasattr(e, 'code'):
                 msg = 'The server could not fulfill the request.'
                 msg += 'Error code: %s' % e.code
-            return msg
+                raise URLError(msg)
+            else:
+                return False
 
         logger.debug('\n----> Download complete.\n')
         return path
 
     @staticmethod
-    def do_expansion(archive_file):
+    async def do_expansion(archive_file):
         logger.info("\n--> Expanding: %s" % archive_file)
         try:
             subprocess.run(["uncompress", "-k", archive_file], stdout=subprocess.PIPE)
@@ -147,8 +156,9 @@ class Model(ObservableModel):
 
 
 class ModelSchema(Schema):
-    name = hug.types.Text
-    # metadata = fields.Nested(ModelMetaDataSchema, many=False)
+    name = fields.String()
+    metadata = fields.Nested(ModelMetaDataSchema, many=False)
     parameters = fields.String()
     outputs = fields.String()
-    # tolerance = fields.Decimal(as_string=True)
+    ident = fields.String()
+    code = fields.String()

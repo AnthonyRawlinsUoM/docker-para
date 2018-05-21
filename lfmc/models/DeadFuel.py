@@ -1,5 +1,7 @@
 import os
 import os.path
+from urllib.error import URLError
+
 import numpy as np
 
 import datetime as dt
@@ -8,6 +10,7 @@ from pathlib2 import Path
 
 import asyncio
 
+from lfmc.results.Abstracts import Abstracts
 from lfmc.results.Author import Author
 from lfmc.models.Model import Model
 from lfmc.models.ModelMetaData import ModelMetaData
@@ -39,20 +42,45 @@ class DeadFuelModel(Model):
 
         # TODO - Proper metadata!
         authors = [
-            Author(name="Test1", email="test1@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test2", email="test2@example.com",
-                   organisation="Test Organisation"),
-            Author(name="Test3", email="test3@example.com",
-                   organisation="Test Organisation")
+            Author(name="Rachel Nolan", email="",
+                   organisation="Hawkesbury Institute for the Environment, Western Sydney University"),
+            Author(name="Víctor Resco de Dios", email="",
+                   organisation="Hawkesbury Institute for the Environment, Western Sydney University"),
+            Author(name="Matthias M. Boer", email="",
+                   organisation="Hawkesbury Institute for the Environment, Western Sydney University"),
+            Author(name="Gabriele Caccamo", email="",
+                   organisation="Hawkesbury Institute for the Environment, Western Sydney University"),
+            Author(name="Matthias M. Boer", email="",
+                   organisation="Hawkesbury Institute for the Environment, Western Sydney University"),
+            Author(name="Michael L. Goulden", email="",
+                   organisation="Department of Earth System Science, University of California"),
+            Author(name="Ross A. Bradstock", email="",
+                   organisation="Centre for Environmental Risk Management of Bushfires, Centre for Sustainable Ecosystem Solutions, University of Wollongong")
         ]
 
-        pub_date = dt.datetime(2015, 9, 9)
-
+        pub_date = dt.datetime(2015, 12, 9)
+        abstract = Abstracts("Spatially explicit predictions of fuel moisture content are crucial for quantifying fire danger indices and as inputs \
+        to fire behaviour models. Remotely sensed predictions of fuel moisture have typically focused on live fuels; but \
+        regional estimates of dead fuel moisture have been less common. Here we develop and test the spatial application \
+        of a recently developed dead fuel moisture model, which is based on the exponential decline of fine fuel moisture \
+        with increasing vapour pressure deficit (D). We first compare the performance of two existing approaches to pre- \
+        dict D from satellite observations. We then use remotely sensed D, as well as D estimated from gridded daily \
+        weather observations, to predict dead fuel moisture. We calibrate and test the model at a woodland site in \
+        South East Australia, and then test the model at a range of sites in South East Australia and Southern California \
+        that vary in vegetation type, mean annual precipitation (129–1404 mm year −1 ) and leaf area index (0.1–5.7). \
+        We found that D modelled from remotely sensed land surface temperature performed slightly better than a \
+        model which also included total precipitable water (MAE b 1.16 kPa and 1.62 kPa respectively). D calculated \
+        with observations from the Moderate Resolution Imaging Spectroradiometer (MODIS) on the Terra satellite \
+        was under-predicted in areas with low leaf area index. Both D from remotely sensed data and gridded weather \
+        station data were good predictors of the moisture content of dead suspended fuels at validation sites, with \
+        mean absolute errors less than 3.9% and 6.0% respectively. The occurrence of data gaps in remotely sensed \
+        time series presents an obstacle to this approach, and assimilated or extrapolated meteorological observations \
+        may offer better continuity.")
         self.metadata = ModelMetaData(authors=authors,
                                       published_date=pub_date,
                                       fuel_types=["surface"],
-                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010")
+                                      doi="http://dx.doi.org/10.1016/j.rse.2015.12.010",
+                                      abstract=abstract)
 
         # Prefixes
         vapour_prefix = 'VP3pm'
@@ -60,6 +88,8 @@ class DeadFuelModel(Model):
         precipitation_prefix = 'P'
         dead_fuel_moisture_prefix = 'DFMC'
 
+        self.ident = "Dead Fuels"
+        self.code = "DFMC"
         self.path = os.path.abspath(Model.path() + 'Dead_FM') + '/'
 
         vapour_url = "http://www.bom.gov.au/web03/ncc/www/awap/vprp/vprph15/daily/grid/0.05/history/nat/"
@@ -145,7 +175,8 @@ class DeadFuelModel(Model):
             with xr.open_mfdataset(fs) as ds:
                 if "observations" in ds.dims:
                     sr = ds.squeeze("observations")
-            sr = sr.sel(time=slice(shape_query.temporal.start.strftime("%Y-%m-%d"), shape_query.temporal.finish.strftime("%Y-%m-%d")))
+            sr = sr.sel(time=slice(shape_query.temporal.start.strftime("%Y-%m-%d"),
+                                   shape_query.temporal.finish.strftime("%Y-%m-%d")))
 
             return shape_query.apply_mask_to(sr)
         else:
@@ -321,45 +352,63 @@ class DeadFuelModel(Model):
 
     async def collect_parameter_data(self, param, when):
         """ Collects input parameters for the model as determined by the metadata. """
-        param = self.parameters[param]
-        file_path = Path(param['path'])
-        if not file_path.is_dir():
-            os.makedirs(file_path)
+        parameter_dataset_name = None
 
-        parameter_dataset_name = file_path / (param['prefix'] + "_" +
-                                              param['dataset'])
-        if parameter_dataset_name.is_file():
+        # Only collect from the past!
+        if when.date() < dt.datetime.today().date():
+            param = self.parameters[param]
+            file_path = Path(param['path'])
+            if not file_path.is_dir():
+                os.makedirs(file_path)
+
+            parameter_dataset_name = file_path / (param['prefix'] + "_" +
+                                                  param['dataset'])
+            if parameter_dataset_name.is_file():
+                return parameter_dataset_name
+            else:
+                data_file = file_path / (param['prefix'] + "_" +
+                                         when.strftime("%Y%m%d") +
+                                         param['suffix'])
+
+                archive_file = Path(str(data_file) + param['compression_suffix'])
+
+                try:
+
+                    if data_file.is_file():
+                        parameter_dataset_name = self.do_conversion(
+                            data_file, param, when)
+
+                    elif not data_file.is_file() and archive_file.is_file():
+                        logger.debug('Found an unexpanded archive: %s' % archive_file)
+                        await self.do_expansion(archive_file)
+                        parameter_dataset_name = self.do_conversion(
+                            data_file, param, when)
+                        # Remove the archive?
+
+                    elif not data_file.is_file() and not archive_file.is_file():
+                        date_string = when.strftime("%Y%m%d")
+                        resource = date_string + date_string + param['suffix'] + \
+                                   param['compression_suffix']
+
+
+                        await self.do_download(param["url"], resource, archive_file)
+                        # has implicit await?
+                        await self.do_expansion(archive_file)
+                        parameter_dataset_name = self.do_conversion(
+                                data_file, param, when)
+
+                except URLError as e:
+                    logger.warning(e)
+                    return None
+                except FileNotFoundError as fnf:
+                    logger.warning(fnf)
+                    return None
+
+        if Path(parameter_dataset_name).is_file():
             return parameter_dataset_name
         else:
-            data_file = file_path / (param['prefix'] + "_" +
-                                     when.strftime("%Y%m%d") +
-                                     param['suffix'])
-
-            archive_file = Path(str(data_file) + param['compression_suffix'])
-
-            if data_file.is_file():
-                parameter_dataset_name = self.do_conversion(
-                    data_file, param, when)
-
-            elif not data_file.is_file() and archive_file.is_file():
-                data_file = self.do_expansion(archive_file)
-                parameter_dataset_name = self.do_conversion(
-                    data_file, param, when)
-                # Remove the archive?
-
-            elif not data_file.is_file() and not archive_file.is_file():
-                date_string = when.strftime("%Y%m%d")
-                resource = date_string + date_string + param['suffix'] + \
-                           param['compression_suffix']
-
-                if await self.do_download(param["url"], resource, archive_file):
-                    # has implicit await?
-                    self.do_expansion(archive_file)
-                    asyncio.sleep(1)
-                    parameter_dataset_name = self.do_conversion(
-                        data_file, param, when)
-
-        return parameter_dataset_name
+            logger.warning("No parameters for that date.")
+            return None
 
     @staticmethod
     def calculate(vp, t):
