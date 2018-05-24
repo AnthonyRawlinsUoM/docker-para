@@ -47,7 +47,7 @@ class BomBasedModel(Model):
                                      mean=m,
                                      minimum=df.min(),
                                      maximum=df.max(),
-                                     deviation=df.std()))
+                                     deviation=0))
         except FileNotFoundError:
             logger.exception('Files not found for date range.')
 

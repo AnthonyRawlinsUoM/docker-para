@@ -39,11 +39,10 @@ class TempModel(BomBasedModel):
             "readings": {
                 "path": self.path,
                 "url": "",
-                "prefix": "Tmx",
+                "prefix": "MaxT_SFC",
                 "suffix": ".nc"
             }
         }
 
     def netcdf_name_for_date(self, when):
-        return os.path.abspath(
-            Model.path() + "/Dead_FM/Tmx/Tmx_{}.grid.nc".format(when.strftime("%Y%m%d")))
+        return self.netcdf_names_for_date(when, "IDV71002_VIC_MaxT_SFC.nc")

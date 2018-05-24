@@ -242,7 +242,7 @@ class DeadFuelModel(Model):
                                  mean=m,
                                  minimum=df.min(),
                                  maximum=df.max(),
-                                 deviation=df.std()))
+                                 deviation=0))
 
         asyncio.sleep(1)
 

@@ -50,4 +50,4 @@ class DataPointSchema(Schema):
     mean = fields.Float()
     min = fields.Float()
     max = fields.Float()
-    std = fields.Float()
+    # std = fields.Float()

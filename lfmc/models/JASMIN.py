@@ -1,8 +1,14 @@
 import asyncio
 import os
 import os.path
-
-from lfmc.models.BomBasedModel import BomBasedModel
+import pandas as pd
+import glob
+import lfmc.config.debug as dev
+from pathlib2 import Path
+import xarray as xr
+from lfmc.query.ShapeQuery import ShapeQuery
+from lfmc.results.DataPoint import DataPoint
+from lfmc.results.ModelResult import ModelResult
 from lfmc.results.Abstracts import Abstracts
 from lfmc.results.Author import Author
 import datetime as dt
@@ -15,7 +21,7 @@ logging.basicConfig(filename='/var/log/lfmcserver.log', level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-class JasminModel(BomBasedModel):
+class JasminModel(Model):
 
     def __init__(self):
         self.name = "jasmin"
@@ -70,7 +76,77 @@ class JasminModel(BomBasedModel):
             }
         }
 
-    def netcdf_name_for_date(self, when):
-        return os.path.abspath(
-            Model.path() + "/JASMIN/rescaled/21vls/jasmin.kbdi/cdf temporal/jasmin.kbdi.cdf_temporal.2lvls.{}.nc".format(
-                when.strftime("%Y")))
+    def netcdf_names_for_dates(self, start, finish):
+        # Because some of the data is in 7 day observations,
+        # we need to pad dates +/- 7 days to ensure we grab the correct nc files that might contain 'when'
+        window_begin = start - dt.timedelta(7)
+        window_end = finish + dt.timedelta(7)
+        cdf_list = []
+
+        for d in pd.date_range(window_begin, window_end):
+            cdf_list += [p for p in
+                         glob.glob(Model.path() + "JASMIN/rescaled/21vls/jasmin.kbdi/temporal/jasmin.kbdi.cdf_temporal.2lvls.{}.nc".format(d.strftime("%Y")))]
+
+        return [f for f in list(set(cdf_list)) if Path(f).is_file()]
+
+    # ShapeQuery
+    async def get_shaped_resultcube(self, shape_query: ShapeQuery) -> xr.DataArray:
+
+        sr = None
+        fs = self.netcdf_names_for_dates(shape_query.temporal.start, shape_query.temporal.finish)
+        if dev.DEBUG:
+            logger.debug('{}\n'.format(f) for f in fs)
+        asyncio.sleep(1)
+
+        if len(fs) > 0:
+            with xr.open_mfdataset(fs) as ds:
+                if "observations" in ds.dims:
+                    sr = ds.squeeze("observations")
+                else:
+                    sr = ds
+
+            if dev.DEBUG:
+                logger.debug(sr)
+            sr.attrs['var_name'] = self.outputs['readings']['prefix']
+            sr = sr.sel(time=slice(shape_query.temporal.start.strftime("%Y-%m-%d"),
+                                   shape_query.temporal.finish.strftime("%Y-%m-%d")))
+
+            return shape_query.apply_mask_to(sr)
+        else:
+            return xr.DataArray([])
+
+    async def get_shaped_timeseries(self, query: ShapeQuery) -> ModelResult:
+        if dev.DEBUG:
+            logger.debug(
+                "\n--->>> Shape Query Called successfully on %s Model!! <<<---" % self.name)
+            logger.debug("Spatial Component is: \n%s" % str(query.spatial))
+            logger.debug("Temporal Component is: \n%s" % str(query.temporal))
+            logger.debug("\nDerived LAT1: %s\nDerived LON1: %s\nDerived LAT2: %s\nDerived LON2: %s" %
+                         query.spatial.expanded(0.05))
+        dps = []
+        try:
+            sr = await (self.get_shaped_resultcube(query))
+            sr.load()
+            if dev.DEBUG:
+                logger.debug("Shaped ResultCube is: \n%s" % sr)
+
+            for r in sr['time']:
+                t = r['time'].values
+                o = sr.sel(time=t)
+                p = self.outputs['readings']['prefix']
+                df = o[p].to_dataframe()
+                df = df[p]
+                # TODO - This is a quick hack to massage the datetime format into a markup suitable for D3 & ngx-charts!
+                m = df.mean()
+                dps.append(DataPoint(observation_time=str(t).replace('.000000000', '.000Z'),
+                                     value=m,
+                                     mean=m,
+                                     minimum=df.min(),
+                                     maximum=df.max(),
+                                     deviation=0))
+        except FileNotFoundError:
+            logger.exception('Files not found for date range.')
+
+        asyncio.sleep(1)
+
+        return ModelResult(model_name=self.name, data_points=dps)
